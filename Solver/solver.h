@@ -12,6 +12,7 @@
 namespace ck {
 
 #define NONE -1
+#define MAX_BUF_LEN 1000
 
 class GraphColoring {
 public:
@@ -47,11 +48,19 @@ public:
     ~GraphColoring() {}
 protected:
     void loadGraph(const std::string path);
+    void getOptima(const std::string path, int inst);
     void genInitSolution();
+    void localSearch();
+    std::vector<int> findMove();
+    void makeMove(int u, int vi, int vj, int delt);
+
 private:
+    int vertex_num_;
+    int edge_num_;
     int color_num_;
     Configure cfg_;
     std::vector<std::vector<int>> adj_list;//store the graph in adjacency list
+    std::vector<std::vector<int>> adj_color_table; // record the number of each colors of adjacent vertex 
     std::vector<int> color;//record the color of each vertex
     std::vector< std::vector<bool> > vertex_color_avail; //record the available color of each vertexs
     std::vector<int> num_avail_colors; // record the number of colors available of each vertexs
