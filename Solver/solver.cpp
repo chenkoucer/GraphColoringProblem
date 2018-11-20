@@ -9,9 +9,15 @@ using namespace std;
 
 namespace ck {
 void GraphColoring::Solve() {
-    loadGraph("./instance" + kInstanceName);
-    cout << "导入数据完毕！";
-
+    loadGraph("instance/" + kInstanceName);
+    cout << "导入数据完毕！" << endl;
+    getOptima("./instance/" + OptimalSolName);
+    cout << "optimal solution: " << color_num_ << endl;
+    genInitSolution();
+    cout << "初始化完毕！" <<endl;
+    tabuSearch();
+    cout << "禁忌搜索完毕！" << endl;
+    
 }
 void GraphColoring::Record(const char * log_path) {
 }
@@ -20,6 +26,7 @@ void GraphColoring::loadGraph(const string path) {
         char c; //read useless character
         char s[MAX_BUF_LEN]; // read useless string
         int v1, v2;
+        cout << "path: " << path << endl;
         ifstream ifs(path);
         if (!ifs.is_open()) {
             cout << "ERROR:Can't open instance file!" << endl;
@@ -48,7 +55,7 @@ void GraphColoring::loadGraph(const string path) {
 
 }
 
-void GraphColoring::getOptima(const std::string path, int inst) {
+void GraphColoring::getOptima(const std::string path) {
     string instName;
     string time;
 
@@ -57,8 +64,10 @@ void GraphColoring::getOptima(const std::string path, int inst) {
         cout << "ERROR: Can't open the file!" << endl;
         return;
     } else {
-        for (int i = 0; i <= inst; ++i) {
+        while (!ifs.eof()) {
             ifs >> instName >> color_num_ >> time;
+            if (instName.compare(kInstanceName) == 0)
+                return;
         }
         ifs.close();
     }
@@ -79,9 +88,9 @@ void GraphColoring::genInitSolution() {
             largest_degree_vertext = i;
         }
     }
-
     // choose the vertex v1 with largest degree, color v1 with 1
     color[largest_degree_vertext] = 0;
+    num_avail_colors[largest_degree_vertext] = kINF;
     for (int vj : adj_list[largest_degree_vertext]) {
         vertex_color_avail[vj][0] = false;
         num_avail_colors[vj]--;
@@ -91,8 +100,8 @@ void GraphColoring::genInitSolution() {
     //select the vertex and color int the sequential
     for (int i = 1; i < vertex_num_; ++i) {
         // choose a vertex vi with smallest degs,the number of available colors that vertex vi can use
-        int vi = min_element(num_avail_colors.begin() + i, num_avail_colors.end()) - num_avail_colors.begin();
-
+        int vi = min_element(num_avail_colors.begin(), num_avail_colors.end()) - num_avail_colors.begin();
+        
         // choose a color  ki with the smallest number of uncolored vertex for which color ki is available
         int ki = -1, ki_count = kINF; // record the ki and the number
         for (int k = 0; k < color_num_; ++k) {
@@ -110,7 +119,10 @@ void GraphColoring::genInitSolution() {
         }
 
         // color vertex vi with ki and updating:
+        if (ki == -1)
+            ki = rand() % color_num_;
         color[vi] = ki;
+        num_avail_colors[vi] = kINF;
         for (int vj : adj_list[vi]) {
             vertex_uncolored_degree[vj]--;
             if (vertex_color_avail[vj][ki]) {
@@ -124,13 +136,16 @@ void GraphColoring::genInitSolution() {
 
 void GraphColoring::tabuSearch() {
     initStructures();
-    while (iter_ < cfg_.max_tabu_steps) {
+    cout << "禁忌搜索前冲突边数量：  " << best_conf_edges << endl;
+    while (!isTimeOut() && iter_ < cfg_.max_tabu_steps) {
         MoveStruct next_move = findMove();
         if (perturbance >= cfg_.perturb_range && next_move.delt + conf_edges >= best_conf_edges)
             next_move = perturbSolu();
         makeMove(next_move);
         iter_++;
     }
+    cout << "禁忌搜索后冲突边数量：  " << best_conf_edges << endl;
+    cout << "迭代次数：" << iter_ << "   迭代时间：" << time(NULL) - kStartTime << endl;
     
 }
 
@@ -156,8 +171,8 @@ GraphColoring::MoveStruct GraphColoring::findMove() {
         int color_i = color[i];
         if (adj_color_table[i][color_i] > 0) {
             for (int k = 0; k < color_num_; ++k) {
-                int delt_ = adj_color_table[i][k] - adj_color_table[i][color_i];
                 if (color_i != k) {
+                    int delt_ = adj_color_table[i][k] - adj_color_table[i][color_i];
                     if (tabu_tenure[i][k] > iter_) {
                         if (delt_ <= tabu_best.delt) {
                             tabu_best.vertex = i;
@@ -183,7 +198,7 @@ GraphColoring::MoveStruct GraphColoring::findMove() {
             }// k = 0:color_num_
         }//if there exists an incompatible color in adjacent edge
     }
-    if (conf_edges + tabu_best.delt < best_conf_edges)
+    if (conf_edges + tabu_best.delt <= best_conf_edges)
         return tabu_moves[rand() % tabu_moves.size()];
     else if (no_tabu_moves.size() > 0)
         return no_tabu_moves[rand() % no_tabu_moves.size()];
@@ -209,6 +224,7 @@ void GraphColoring::makeMove(MoveStruct & move_) {
         best_conf_edges = conf_edges;
         best_color = color;
         perturbance = 0;
+        cout << "迭代次数：" << iter_ <<"   冲突边数量："<< best_conf_edges<< "   迭代时间：" << double(clock() - kStartClock) / 1000 << endl;
     }
     tabu_tenure[move_.vertex][move_.ki] = iter_ + conf_edges + rand() % 10;
     perturbance++;

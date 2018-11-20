@@ -21,9 +21,10 @@ public:
     const time_t kStartTime = time(NULL);
     const std::string kAlgorithm = "TabuSearch";
     const std::string kInstanceName;
+    const std::string OptimalSolName = "optima.txt";
     struct Configure {
         int perturb_range = 2000;
-        int timeout_seconds = 10;
+        int timeout_seconds = 60;
         int max_tabu_steps = kINF;
         unsigned int random_seed = 99995011 / (time(NULL) % 255) + 1;
         std::string ToString() {
@@ -40,7 +41,7 @@ public:
         int vertex;
         int ki;
         int kj;
-        int delt = kINF;
+        int delt = 20000;
     };
 public:
     explicit GraphColoring(const char* inst_name, const int color_num = 10) :kInstanceName(inst_name) {
@@ -57,7 +58,7 @@ public:
 
 protected:
     void loadGraph(const std::string path);
-    void getOptima(const std::string path, int inst);
+    void getOptima(const std::string path);
     void genInitSolution();
     void tabuSearch();
     void initStructures();

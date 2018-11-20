@@ -36,12 +36,13 @@ int main(int argc, char *argv[]) {
         solver.Solve();
 
     } else {
-        string s = "DSJC125.1.col";
+        string s = "DSJC500.9.col";
         //instance_name = s.begin();
+        instance_name = (char *)s.c_str();
         cout << instance_name << endl;
-        getchar();
         GraphColoring solver(instance_name, cfg, color_num);
         solver.Solve();
+
         cout << help_info << endl;
     }
     getchar();
