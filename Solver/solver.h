@@ -23,8 +23,8 @@ public:
     const std::string kInstanceName;
     const std::string OptimalSolName = "optima.txt";
     struct Configure {
-        int perturb_range = 2000;
-        int timeout_seconds = 60;
+        int perturb_range = 500000;
+        int timeout_seconds = 30;
         int max_tabu_steps = kINF;
         unsigned int random_seed = 99995011 / (time(NULL) % 255) + 1;
         std::string ToString() {
@@ -74,6 +74,7 @@ private:
     int edge_num_;
     int color_num_;
     int iter_ = 0;
+    //int tabu_base = 0;
     int perturbance = 0; // record the number of times that the optimal solution is not updated continuously
     
     Configure cfg_;
@@ -86,6 +87,7 @@ private:
     std::vector<int> color;//record the color of each vertex
     std::vector<int>best_color;//record the historical optimal sulution
     int conf_edges = 0; // record the conflicts of edges
+    int best_conf_vertexs = 0;
     int best_conf_edges = kINF;//record the historical least conflicts 
 
     std::vector< std::vector<bool> > vertex_color_avail; //record the available color of each vertexs

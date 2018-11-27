@@ -9,9 +9,9 @@ using namespace std;
 
 namespace ck {
 void GraphColoring::Solve() {
-    loadGraph("instance/" + kInstanceName);
+    loadGraph("../Deploy/instance/" + kInstanceName);
     cout << "导入数据完毕！" << endl;
-    getOptima("./instance/" + OptimalSolName);
+    getOptima("../Deploy/instance/" + OptimalSolName);
     cout << "optimal solution: " << color_num_ << endl;
     genInitSolution();
     cout << "初始化完毕！" <<endl;
@@ -61,7 +61,7 @@ void GraphColoring::getOptima(const std::string path) {
 
     ifstream ifs(path);
     if (!ifs.is_open()) {
-        cout << "ERROR: Can't open the file!" << endl;
+        cout << "ERROR: Can't open the optimal file!" << endl;
         return;
     } else {
         while (!ifs.eof()) {
@@ -138,15 +138,18 @@ void GraphColoring::tabuSearch() {
     initStructures();
     cout << "禁忌搜索前冲突边数量：  " << best_conf_edges << endl;
     while (!isTimeOut() && iter_ < cfg_.max_tabu_steps) {
+        if (best_conf_edges == 0) {
+            break;
+        }
         MoveStruct next_move = findMove();
-        if (perturbance >= cfg_.perturb_range && next_move.delt + conf_edges >= best_conf_edges)
+        if (perturbance >= cfg_.perturb_range && next_move.delt + conf_edges >= best_conf_edges) {
             next_move = perturbSolu();
+        }  
         makeMove(next_move);
         iter_++;
     }
-    cout << "禁忌搜索后冲突边数量：  " << best_conf_edges << endl;
-    cout << "迭代次数：" << iter_ << "   迭代时间：" << time(NULL) - kStartTime << endl;
-    
+    cout << "禁忌搜索后冲突边数量：  " << best_conf_edges  << endl;
+    cout << "迭代次数：" << iter_ << "   迭代时间：" << time(NULL) - kStartTime << "  迭代时钟数： "<< double(clock() - kStartClock)/1000 <<"s" <<  endl;
 }
 
 void GraphColoring::initStructures() {
@@ -155,8 +158,15 @@ void GraphColoring::initStructures() {
         for (int vj : adj_list[i]) {
             adj_color_table[i][color[vj]]++;
         }
-        conf_edges += adj_color_table[i][color[i]];
     }
+    for (int i = 0; i < vertex_num_; ++i) {
+        if (adj_color_table[i][color[i]] > 0) {
+            best_conf_vertexs++;
+            conf_edges += adj_color_table[i][color[i]];
+        }
+    }
+        
+    conf_edges /= 2;
     tabu_tenure.assign(vertex_num_, vector<int>(color_num_, 0));
     best_color = color;
     best_conf_edges = conf_edges;
@@ -198,17 +208,21 @@ GraphColoring::MoveStruct GraphColoring::findMove() {
             }// k = 0:color_num_
         }//if there exists an incompatible color in adjacent edge
     }
-    if (conf_edges + tabu_best.delt <= best_conf_edges)
+    if (conf_edges + tabu_best.delt < best_conf_edges)
         return tabu_moves[rand() % tabu_moves.size()];
     else if (no_tabu_moves.size() > 0)
         return no_tabu_moves[rand() % no_tabu_moves.size()];
-    else
-        return tabu_best;
+    else {
+        return tabu_best;//perturbSolu();//tabu_best;
+    }
+    
 }
 
 GraphColoring::MoveStruct GraphColoring::perturbSolu() {
+    perturbance = 0;
     MoveStruct perSolu;
-    int v = rand() % vertex_num_, ki = color[v], kj = rand() % color_num_;
+    int v = rand() % vertex_num_;
+    int ki = color[v], kj = rand() % color_num_;
     int delt = adj_color_table[v][kj] - adj_color_table[v][ki];
     perSolu.vertex = v;
     perSolu.ki = ki;
@@ -223,10 +237,21 @@ void GraphColoring::makeMove(MoveStruct & move_) {
         //update the historical optimal solution
         best_conf_edges = conf_edges;
         best_color = color;
+
+        //
+        best_conf_vertexs = 0;
+        for (int i = 0; i < vertex_num_; ++i) {
+            if (adj_color_table[i][best_color[i]] > 0) {
+                best_conf_vertexs++;
+            }
+        }
+        //
+
+
         perturbance = 0;
-        cout << "迭代次数：" << iter_ <<"   冲突边数量："<< best_conf_edges<< "   迭代时间：" << double(clock() - kStartClock) / 1000 << endl;
+        cout << "迭代次数：" << iter_ <<"   冲突边数量："<< best_conf_edges << "   冲突节点数量：" << best_conf_vertexs << "   迭代时间：" << double(clock() - kStartClock) / 1000 << endl;
     }
-    tabu_tenure[move_.vertex][move_.ki] = iter_ + conf_edges + rand() % 10;
+    tabu_tenure[move_.vertex][move_.ki] = iter_  + best_conf_vertexs+ rand() % 10;
     perturbance++;
     for (int i : adj_list[move_.vertex]) {
         adj_color_table[i][move_.ki]--;

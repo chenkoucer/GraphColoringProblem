@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
         solver.Solve();
 
     } else {
-        string s = "DSJC500.9.col";
+        string s = "DSJC250.5.col";
         //instance_name = s.begin();
         instance_name = (char *)s.c_str();
         cout << instance_name << endl;
