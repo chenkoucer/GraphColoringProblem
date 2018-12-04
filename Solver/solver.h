@@ -15,6 +15,7 @@ namespace ck {
 #define kINF INT32_MAX
 #define MAX_BUF_LEN 1000
 
+
 class GraphColoring {
 public:
     const clock_t kStartClock = clock();
@@ -23,8 +24,8 @@ public:
     const std::string kInstanceName;
     const std::string OptimalSolName = "optima.txt";
     struct Configure {
-        int perturb_range = 500000;
-        int timeout_seconds = 30;
+        int perturb_range = kINF;
+        int timeout_seconds = 300;
         int max_tabu_steps = kINF;
         unsigned int random_seed = 99995011 / (time(NULL) % 255) + 1;
         std::string ToString() {
@@ -79,7 +80,6 @@ private:
     
     Configure cfg_;
     
-    
     std::vector<std::vector<int>> adj_list;//store the graph in adjacency list
     std::vector<std::vector<int>> adj_color_table; // record the number of each colors of adjacent vertex 
     std::vector<std::vector<int>> tabu_tenure; //restricts consideration to moves not forbidden 
@@ -87,7 +87,6 @@ private:
     std::vector<int> color;//record the color of each vertex
     std::vector<int>best_color;//record the historical optimal sulution
     int conf_edges = 0; // record the conflicts of edges
-    int best_conf_vertexs = 0;
     int best_conf_edges = kINF;//record the historical least conflicts 
 
     std::vector< std::vector<bool> > vertex_color_avail; //record the available color of each vertexs

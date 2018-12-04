@@ -8,16 +8,19 @@
 using namespace std;
 
 namespace ck {
+
 void GraphColoring::Solve() {
+    //cout << "算例：" << kInstanceName << endl;
     loadGraph("../Deploy/instance/" + kInstanceName);
-    cout << "导入数据完毕！" << endl;
+    //cout << "导入数据完毕！" << endl;
     getOptima("../Deploy/instance/" + OptimalSolName);
-    cout << "optimal solution: " << color_num_ << endl;
+    //color_num_ += 2;
+    //cout << "optimal solution: " << color_num_ << endl;
     genInitSolution();
-    cout << "初始化完毕！" <<endl;
+    //cout << "初始化完毕！" <<endl;
     tabuSearch();
-    cout << "禁忌搜索完毕！" << endl;
-    
+    //cout << "禁忌搜索完毕！" << endl; 
+    cout << "color_k:"<< color_num_<<"   迭代次数：" << iter_ << "   迭代时间：" << time(NULL) - kStartTime << "  迭代时钟数： " << double(clock() - kStartClock) / 1000 << "s" << endl << endl << endl;
 }
 void GraphColoring::Record(const char * log_path) {
 }
@@ -26,7 +29,7 @@ void GraphColoring::loadGraph(const string path) {
         char c; //read useless character
         char s[MAX_BUF_LEN]; // read useless string
         int v1, v2;
-        cout << "path: " << path << endl;
+        //cout << "path: " << path << endl;
         ifstream ifs(path);
         if (!ifs.is_open()) {
             cout << "ERROR:Can't open instance file!" << endl;
@@ -57,15 +60,17 @@ void GraphColoring::loadGraph(const string path) {
 
 void GraphColoring::getOptima(const std::string path) {
     string instName;
-    string time;
+    char s[INT8_MAX];
+    //string time;
 
     ifstream ifs(path);
     if (!ifs.is_open()) {
         cout << "ERROR: Can't open the optimal file!" << endl;
         return;
     } else {
+        ifs.getline(s, INT8_MAX);
         while (!ifs.eof()) {
-            ifs >> instName >> color_num_ >> time;
+            ifs >> instName >> color_num_;
             if (instName.compare(kInstanceName) == 0)
                 return;
         }
@@ -136,7 +141,7 @@ void GraphColoring::genInitSolution() {
 
 void GraphColoring::tabuSearch() {
     initStructures();
-    cout << "禁忌搜索前冲突边数量：  " << best_conf_edges << endl;
+    //cout << "禁忌搜索前冲突边数量：  " << best_conf_edges << endl;
     while (!isTimeOut() && iter_ < cfg_.max_tabu_steps) {
         if (best_conf_edges == 0) {
             break;
@@ -148,8 +153,8 @@ void GraphColoring::tabuSearch() {
         makeMove(next_move);
         iter_++;
     }
-    cout << "禁忌搜索后冲突边数量：  " << best_conf_edges  << endl;
-    cout << "迭代次数：" << iter_ << "   迭代时间：" << time(NULL) - kStartTime << "  迭代时钟数： "<< double(clock() - kStartClock)/1000 <<"s" <<  endl;
+    //cout << "禁忌搜索后冲突边数量：  " << best_conf_edges  << endl;
+    
 }
 
 void GraphColoring::initStructures() {
@@ -161,7 +166,6 @@ void GraphColoring::initStructures() {
     }
     for (int i = 0; i < vertex_num_; ++i) {
         if (adj_color_table[i][color[i]] > 0) {
-            best_conf_vertexs++;
             conf_edges += adj_color_table[i][color[i]];
         }
     }
@@ -210,12 +214,9 @@ GraphColoring::MoveStruct GraphColoring::findMove() {
     }
     if (conf_edges + tabu_best.delt < best_conf_edges)
         return tabu_moves[rand() % tabu_moves.size()];
-    else if (no_tabu_moves.size() > 0)
+    else 
         return no_tabu_moves[rand() % no_tabu_moves.size()];
-    else {
-        return tabu_best;//perturbSolu();//tabu_best;
-    }
-    
+ 
 }
 
 GraphColoring::MoveStruct GraphColoring::perturbSolu() {
@@ -233,34 +234,31 @@ GraphColoring::MoveStruct GraphColoring::perturbSolu() {
 void GraphColoring::makeMove(MoveStruct & move_) {
     color[move_.vertex] = move_.kj;
     conf_edges += move_.delt;
-    if (conf_edges < best_conf_edges) {
-        //update the historical optimal solution
-        best_conf_edges = conf_edges;
-        best_color = color;
-
-        //
-        best_conf_vertexs = 0;
-        for (int i = 0; i < vertex_num_; ++i) {
-            if (adj_color_table[i][best_color[i]] > 0) {
-                best_conf_vertexs++;
-            }
-        }
-        //
-
-
-        perturbance = 0;
-        cout << "迭代次数：" << iter_ <<"   冲突边数量："<< best_conf_edges << "   冲突节点数量：" << best_conf_vertexs << "   迭代时间：" << double(clock() - kStartClock) / 1000 << endl;
-    }
-    tabu_tenure[move_.vertex][move_.ki] = iter_  + best_conf_vertexs+ rand() % 10;
-    perturbance++;
     for (int i : adj_list[move_.vertex]) {
         adj_color_table[i][move_.ki]--;
         adj_color_table[i][move_.kj]++;
     }
+    if (conf_edges < best_conf_edges) {
+        //update the historical optimal solution
+        best_conf_edges = conf_edges;
+        best_color = color;
+        perturbance = 0;
+        cout << "迭代次数：" << iter_ <<"   冲突边数量："<< best_conf_edges << "   迭代时间：" << double(clock() - kStartClock) / 1000 << endl;
+    }
+    int conf_vertex = 0;
+    for (int i = 0; i < vertex_num_; ++i)
+        if (adj_color_table[i][color[i]] > 0)
+            conf_vertex++;
+    tabu_tenure[move_.vertex][move_.ki] = iter_  + conf_vertex + rand() % 10;
+    perturbance++;
 }
 
 const bool GraphColoring::Check() const {
-    return false;
+    for(int i = 0; i < vertex_num_; ++i)
+        for (int j : adj_list[i]) {
+            if (best_color[i] == best_color[j])
+                return false;
+        }
 }
 
 }

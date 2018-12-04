@@ -13,6 +13,18 @@ constexpr char help_info[] = {
  -m: max iteration steps;\n\
 Switch -i is necessary and other switchs is optional." };
 
+static const vector<std::string> instList({
+    "DSJC125.1.col",
+    "DSJC250.1.col",
+    "DSJC250.5.col",
+    "DSJC250.9.col",
+    "DSJC500.1.col",
+    "DSJC500.5.col",
+    "DSJC500.9.col",
+    "DSJC1000.1.col",
+    "DSJC1000.5.col",
+    "DSJC1000.9.col"
+    });
 int main(int argc, char *argv[]) {
     char * instance_name = nullptr;
     int color_num = 10;
@@ -36,13 +48,12 @@ int main(int argc, char *argv[]) {
         solver.Solve();
 
     } else {
-        string s = "DSJC250.5.col";
-        //instance_name = s.begin();
-        instance_name = (char *)s.c_str();
-        cout << instance_name << endl;
-        GraphColoring solver(instance_name, cfg, color_num);
-        solver.Solve();
-
+        for (string s :instList) {
+            instance_name = (char *)s.c_str();
+            cout <<"ËãÀý" << instance_name << endl;
+            GraphColoring solver(instance_name, cfg, color_num);
+            solver.Solve();
+        }
         cout << help_info << endl;
     }
     getchar();
